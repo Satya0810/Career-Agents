@@ -38,7 +38,9 @@ export async function matchJobsForResume(resumePath) {
     const missingSkills = [];
     
     job.skills.forEach(skill => {
-      if (skills.includes(skill) || textRepresentation.includes(skill)) {
+      const escaped = skill.replace(/[-/\\^$*+?.()|[\]{}]/g, '\\$&');
+      const wordPattern = new RegExp(`(?<![A-Za-z0-9#+])${escaped}(?![A-Za-z0-9#+])`, 'i');
+      if (skills.includes(skill) || wordPattern.test(textRepresentation)) {
         matchedSkills.push(skill);
       } else {
         missingSkills.push(skill);
