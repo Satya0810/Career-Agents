@@ -96,7 +96,9 @@ export function evaluateFaangReadiness(resumeData, companyKey) {
   const missingKeywords = [];
 
   rubric.keywords.forEach(kw => {
-    if (resumeSkills.includes(kw) || resumeText.includes(kw)) {
+    const escaped = kw.replace(/[-/\\^$*+?.()|[\]{}]/g, '\\$&');
+    const wordPattern = new RegExp(`(?<![A-Za-z0-9#+])${escaped}(?![A-Za-z0-9#+])`, 'i');
+    if (resumeSkills.includes(kw) || wordPattern.test(resumeText)) {
       matchedKeywords.push(kw);
     } else {
       missingKeywords.push(kw);
