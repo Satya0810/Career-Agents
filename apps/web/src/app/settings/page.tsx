@@ -1021,6 +1021,24 @@ export default function SettingsPage() {
                     </div>
                   </CardContent>
                 </Card>
+
+                <Card className="glass bg-indigo-500/5 border-indigo-500/10">
+                  <CardHeader>
+                    <CardTitle className="text-sm flex items-center gap-2 text-indigo-400">
+                      How to get your GitHub PAT
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <ol className="text-xs text-muted-foreground space-y-2 list-decimal list-inside">
+                      <li>Log in to <a href="https://github.com/settings/tokens" target="_blank" rel="noopener noreferrer" className="text-indigo-400 hover:underline">GitHub Developer Settings</a>.</li>
+                      <li>Click <strong className="text-foreground">Generate new token</strong> &rarr; <strong className="text-foreground">Generate new token (classic)</strong>.</li>
+                      <li>Add a note (e.g., &quot;Career Agents App&quot;) and set an expiration.</li>
+                      <li>Check the <strong className="text-foreground">repo</strong> scope box to allow repository audits.</li>
+                      <li>Scroll down and click <strong className="text-foreground">Generate token</strong>.</li>
+                      <li>Copy the token (starts with <code className="bg-secondary px-1 py-0.5 rounded text-foreground">ghp_</code>) and paste it above.</li>
+                    </ol>
+                  </CardContent>
+                </Card>
               </motion.div>
             )}
 
