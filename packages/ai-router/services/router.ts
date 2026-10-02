@@ -5,6 +5,7 @@ import { classifyGatewayError } from "../utils/error-handler";
 import { recordRouterLog } from "./analytics";
 import { secureFetch, safeLogger } from "../../security";
 import { optimizeMessages, CompressionLevel } from "./token-optimizer";
+import { readSSEData } from "../utils/sse-reader.js";
 import crypto from "crypto";
 
 const ENV_KEY_MAP: Record<string, string> = {
@@ -318,48 +319,26 @@ export async function routeCompletion(
             }
 
             if (isStreaming) {
-              const reader = res.body!.getReader();
-              const decoder = new TextDecoder();
-              let done = false;
-
-              while (!done) {
-                const { value, done: doneReading } = await reader.read();
-                done = doneReading;
-                const chunkValue = decoder.decode(value, { stream: !done });
-
+              await readSSEData(res.body!, (dataStr: string) => {
                 if (providerId === "claude" || providerId === "anthropic") {
-                  const lines = chunkValue.split("\n");
-                  for (const line of lines) {
-                    if (line.startsWith("data: ")) {
-                      const dataStr = line.slice(6).trim();
-                      if (dataStr === "[DONE]") continue;
-                      try {
-                        const eventObj = JSON.parse(dataStr);
-                        if (eventObj.type === "content_block_delta" && eventObj.delta?.text) {
-                          responseText += eventObj.delta.text;
-                          if (onChunk) onChunk(eventObj.delta.text);
-                        }
-                      } catch { }
+                  try {
+                    const eventObj = JSON.parse(dataStr);
+                    if (eventObj.type === "content_block_delta" && eventObj.delta?.text) {
+                      responseText += eventObj.delta.text;
+                      if (onChunk) onChunk(eventObj.delta.text);
                     }
-                  }
+                  } catch { }
                 } else {
-                  const lines = chunkValue.split("\n");
-                  for (const line of lines) {
-                    if (line.startsWith("data: ")) {
-                      const dataStr = line.slice(6).trim();
-                      if (dataStr === "[DONE]") continue;
-                      try {
-                        const json = JSON.parse(dataStr);
-                        const deltaText = json.choices?.[0]?.delta?.content || "";
-                        if (deltaText) {
-                          responseText += deltaText;
-                          if (onChunk) onChunk(deltaText);
-                        }
-                      } catch { }
+                  try {
+                    const json = JSON.parse(dataStr);
+                    const deltaText = json.choices?.[0]?.delta?.content || "";
+                    if (deltaText) {
+                      responseText += deltaText;
+                      if (onChunk) onChunk(deltaText);
                     }
-                  }
+                  } catch { }
                 }
-              }
+              });
             } else {
               const json = await res.json();
               if (providerId === "claude" || providerId === "anthropic") {
