@@ -75,6 +75,19 @@ export function CommandPalette() {
     setSelectedIndex(0);
   }, [query]);
 
+  // Lock background scroll when modal is open
+  useEffect(() => {
+    if (open) {
+      document.body.style.overflow = "hidden";
+    } else {
+      document.body.style.overflow = "";
+    }
+    return () => {
+      document.body.style.overflow = "";
+    };
+  }, [open]);
+
+
   const handleSelect = (href: string) => {
     setOpen(false);
     setQuery("");
@@ -101,7 +114,11 @@ export function CommandPalette() {
   if (!open) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-start justify-center pt-20 px-4 bg-black/70 backdrop-blur-md animate-in fade-in duration-150 font-sans">
+    <div
+      className="fixed inset-0 z-50 flex items-start justify-center pt-20 px-4 bg-black/70 backdrop-blur-md animate-in fade-in duration-150 font-sans"
+      onWheel={(e) => e.stopPropagation()}
+      onTouchMove={(e) => e.stopPropagation()}
+    >
       <div
         className="w-full max-w-xl rounded-2xl bg-[#090d18] border border-cyan-500/30 shadow-[0_20px_60px_rgba(0,0,0,0.9)] overflow-hidden"
         onKeyDown={handleKeyNavigation}
@@ -123,7 +140,7 @@ export function CommandPalette() {
         </div>
 
         {/* Results List */}
-        <div className="max-h-80 overflow-y-auto p-2 space-y-1">
+        <div className="max-h-80 overflow-y-auto overscroll-contain p-2 space-y-1">
           {filteredItems.length === 0 ? (
             <div className="p-8 text-center text-xs text-slate-500">
               No matching agents or pages found. Try searching for &quot;Resume&quot; or &quot;Interview&quot;.

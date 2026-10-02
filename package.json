@@ -11,7 +11,7 @@
     ".": "./scripts/sdk.js"
   },
   "scripts": {
-    "test": "node ./scripts/cli.js validate && node ./scripts/test-package-mcp.js",
+    "test": "node ./scripts/cli.js validate && node ./scripts/test-data-dir.js && node ./scripts/test-package-data.js && node ./scripts/test-package-mcp.js",
     "build": "node --check scripts/cli.js && node --check mcp/server.js && node --check packages/core/executor.js && node --check services/readiness.js",
     "prepack": "npm run build",
     "prepublishOnly": "npm test",

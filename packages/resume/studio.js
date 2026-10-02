@@ -48,7 +48,9 @@ function auditKeywords(resumeData) {
   const missing = [];
   
   commonKeywords.forEach(kw => {
-    if (skills.includes(kw) || text.includes(kw)) {
+    const escaped = kw.replace(/[-/\\^$*+?.()|[\]{}]/g, '\\$&');
+    const wordPattern = new RegExp(`(?<![A-Za-z0-9#+])${escaped}(?![A-Za-z0-9#+])`, 'i');
+    if (skills.includes(kw) || wordPattern.test(text)) {
       matched.push(kw);
     } else {
       missing.push(kw);

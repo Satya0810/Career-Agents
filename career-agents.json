@@ -7440,7 +7440,7 @@
     {
       "division": "resume",
       "description": "Technical resume writing, achievement optimization, ATS formatting, design portfolios, and executive resumes.",
-      "count": 12,
+      "count": 11,
       "category": "Resume Engineering",
       "emoji": "\ud83d\udcc4",
       "name": "Resume",
@@ -7514,20 +7514,6 @@
             "metrics",
             "ats",
             "impact"
-          ]
-        },
-        {
-          "id": "executive-resume-advisor",
-          "file": "resume/executive-resume-advisor.md",
-          "name": "Executive Resume Advisor",
-          "status": "live",
-          "description": "A senior-level resume strategist specializing in leadership branding, executive storytelling, board-facing communication, and high-level career positioning.",
-          "tags": [
-            "resume",
-            "executive",
-            "leadership",
-            "branding",
-            "career"
           ]
         },
         {

@@ -44,15 +44,16 @@ export class ApplicationTracker {
 
     for (const rawLine of lines) {
       const line = rawLine.trim();
-      if (line.startsWith('|') && line.includes('Company') && line.includes('Role')) {
+      if (!inTable && line.startsWith('|') && line.includes('Company') && line.includes('Role')) {
         inTable = true;
-        continue;
-      }
-      if (inTable && line.startsWith('|--') || (line.startsWith('|') && line.includes('---'))) {
         continue;
       }
       if (inTable && line.startsWith('|')) {
         const cells = line.split('|').slice(1, -1).map(c => c.trim());
+        // Skip only the header separator row (e.g. |---|:---:|), not rows whose text contains dashes.
+        if (cells.every(c => /^:?-+:?$/.test(c))) {
+          continue;
+        }
         if (cells.length >= 4) {
           entries.push({
             company: cells[0] || '',
@@ -60,7 +61,8 @@ export class ApplicationTracker {
             status: (cells[2] || 'applied').toLowerCase(),
             appliedDate: cells[3] || '',
             fitScore: cells[4] ? parseInt(cells[4], 10) || null : null,
-            link: cells[5] || '',
+            // toMarkdown() writes '-' for an application without a link.
+            link: cells[5] === '-' ? '' : (cells[5] || ''),
             notes: cells[6] || ''
           });
         }

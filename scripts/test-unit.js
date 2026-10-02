@@ -1,5 +1,6 @@
 import assert from 'assert';
 import fs from 'fs';
+import os from 'os';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { analyzeJobMatch } from '../packages/resume/job-match.js';
@@ -263,6 +264,44 @@ function testJDMatcherRequirementExtraction() {
   assert.deepStrictEqual(JDMatcher.extractRequirements(''), { skills: [], qualifications: [], raw: '' });
 
   console.log('[PASS] JDMatcher requirement extraction');
+function testTrackerMarkdownRoundTrip() {
+  console.log('Testing ApplicationTracker save and reload keeps every application...');
+
+  const applications = [
+    { company: 'Stripe', role: 'Backend Engineer', status: 'applied', appliedDate: '2026-09-01', fitScore: 82, link: 'https://stripe.com/jobs/1', notes: 'Referral' },
+    { company: 'Acme --- Labs', role: 'Senior Engineer', status: 'screening', appliedDate: '2026-09-02', fitScore: null, link: 'https://jobs.example.com/senior-engineer---remote', notes: 'Remote --- US only' },
+    { company: 'Globex', role: 'SRE', status: 'applied', appliedDate: '2026-09-03', fitScore: null, link: '', notes: '' },
+    { company: 'Initech', role: 'Data Engineer', status: 'interviewing', appliedDate: '2026-09-04', fitScore: 60, link: '', notes: 'Company culture call; Role is hybrid' }
+  ];
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'tracker-round-trip-'));
+  const file = path.join(dir, 'pipeline-tracker.md');
+  try {
+    new ApplicationTracker(applications.map(a => ({ ...a }))).save(file);
+    assert.deepStrictEqual(ApplicationTracker.load(file).entries, applications, 'save then load returns the same applications');
+
+    // Saving what was loaded must not change anything either.
+    ApplicationTracker.load(file).save(file);
+    assert.deepStrictEqual(ApplicationTracker.load(file).entries, applications, 'a second save and load is stable');
+  } finally {
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
+
+  // Tracker files written by earlier versions use '-' for an empty link and may align the separator row.
+  const legacy = ApplicationTracker.parseMarkdown([
+    '# Job Application Pipeline Tracker',
+    '',
+    '| Company | Role | Status | Applied Date | Fit Score | Link | Notes |',
+    '|:--------|:-----|:------:|--------------|----------:|------|-------|',
+    '| Globex | SRE | applied | 2026-09-03 | - | - |  |',
+    '| Stripe | Backend Engineer | offer | 2026-09-01 | 82% | https://stripe.com/jobs/1 | Referral |',
+    ''
+  ].join('\n')).entries;
+  assert.deepStrictEqual(legacy, [
+    { company: 'Globex', role: 'SRE', status: 'applied', appliedDate: '2026-09-03', fitScore: null, link: '', notes: '' },
+    { company: 'Stripe', role: 'Backend Engineer', status: 'offer', appliedDate: '2026-09-01', fitScore: 82, link: 'https://stripe.com/jobs/1', notes: 'Referral' }
+  ], 'existing tracker files still load, with "-" read as an empty link');
+
+  console.log('[PASS] ApplicationTracker save and reload keeps every application');
 }
 
 try {
@@ -274,6 +313,7 @@ try {
   testDedupEngine();
   testTrackerStatusTargeting();
   testJDMatcherRequirementExtraction();
+  testTrackerMarkdownRoundTrip();
   console.log('=== ALL UNIT TESTS PASSED ===\n');
   process.exit(0);
 } catch (e) {

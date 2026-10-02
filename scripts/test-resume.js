@@ -4,6 +4,7 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import { parseResumeFile } from '../packages/resume/file-parser.js';
 import { analyzeResumeStudio } from '../packages/resume/studio.js';
+import { evaluateFaangReadiness } from '../packages/resume/faang.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -60,10 +61,46 @@ async function testResumeAnalysis() {
   console.log('[PASS] Scorer and audits successfully evaluated.');
 }
 
+async function testFaangAndKeywordBoundaries() {
+  console.log('Testing FAANG readiness and keyword matching word-boundary guards...');
+
+  // 1. FAANG Google: resume mentioning "algorithms" must NOT match "go"
+  const algorithmsResume = {
+    skills: ['Python', 'SQL'],
+    summary: 'Specialized in distributed algorithms and data structures.'
+  };
+  const googleEval = evaluateFaangReadiness(algorithmsResume, 'google');
+  assert.ok(googleEval.matchedKeywords.includes('algorithms'), 'Should match algorithms');
+  assert.strictEqual(googleEval.matchedKeywords.includes('go'), false, '"algorithms" must not trigger "go"');
+  assert.ok(googleEval.missingKeywords.includes('go'), '"go" must be in missingKeywords');
+
+  // 2. FAANG Amazon: resume mentioning "JavaScript" must NOT match "java"
+  const jsResume = {
+    skills: ['JavaScript', 'HTML/CSS'],
+    summary: 'Frontend developer with rich JavaScript experience.'
+  };
+  const amazonEval = evaluateFaangReadiness(jsResume, 'amazon');
+  assert.strictEqual(amazonEval.matchedKeywords.includes('java'), false, '"JavaScript" must not trigger "java"');
+  assert.ok(amazonEval.missingKeywords.includes('java'), '"java" must be in missingKeywords');
+
+  // 3. Positive match: explicit "Go" and "Java" skills match
+  const goJavaResume = {
+    skills: ['Go', 'Java'],
+    summary: 'Backend developer with Go microservices and Java Spring.'
+  };
+  const googlePositive = evaluateFaangReadiness(goJavaResume, 'google');
+  const amazonPositive = evaluateFaangReadiness(goJavaResume, 'amazon');
+  assert.ok(googlePositive.matchedKeywords.includes('go'), 'Explicit Go must match');
+  assert.ok(amazonPositive.matchedKeywords.includes('java'), 'Explicit Java must match');
+
+  console.log('[PASS] Word-boundary keyword matching verified against false-positive triggers.');
+}
+
 async function run() {
   try {
     await testResumeParsing();
     await testResumeAnalysis();
+    await testFaangAndKeywordBoundaries();
     console.log('=== ALL RESUME STUDIO TESTS PASSED ===\n');
     process.exit(0);
   } catch (e) {

@@ -102,6 +102,65 @@ def validate_divisions(entries, actual_files):
         raise ValueError('; '.join(msgs))
 
 
+def find_duplicates(values):
+    seen, duplicates = set(), []
+    for value in values:
+        if value in seen and value not in duplicates:
+            duplicates.append(value)
+        seen.add(value)
+    return duplicates
+
+
+def validate_registry_consistency(agent_registry, divisions):
+    """Every agent must be registered once in agent-registry.json and listed once in divisions.json,
+    with the same division and prompt file in both."""
+    registry_agents = agent_registry.get('agents', [])
+    division_entries = [
+        (division['division'], agent)
+        for division in divisions['divisions']
+        for agent in division['agents']
+    ]
+    registry_by_id = {a['id']: a for a in registry_agents}
+    divisions_by_id = {agent['id']: (name, agent) for name, agent in division_entries}
+
+    msgs = []
+    duplicate_registry = find_duplicates(a['id'] for a in registry_agents)
+    if duplicate_registry:
+        msgs.append(f'Duplicate agent IDs in agent-registry.json: {duplicate_registry}')
+    duplicate_divisions = find_duplicates(agent['id'] for _, agent in division_entries)
+    if duplicate_divisions:
+        msgs.append(f'Agents listed more than once in divisions.json: {duplicate_divisions}')
+
+    registry_only = [aid for aid in registry_by_id if aid not in divisions_by_id]
+    if registry_only:
+        msgs.append(f'Agents in agent-registry.json but not in divisions.json: {registry_only}')
+    divisions_only = [aid for aid in divisions_by_id if aid not in registry_by_id]
+    if divisions_only:
+        msgs.append(f'Agents in divisions.json but not in agent-registry.json: {divisions_only}')
+
+    division_mismatches = []
+    filename_mismatches = []
+    for aid, agent in registry_by_id.items():
+        if aid not in divisions_by_id:
+            continue
+        division_name, entry = divisions_by_id[aid]
+        if agent.get('division') != division_name:
+            division_mismatches.append(f"{aid} (registry: {agent.get('division')}, divisions.json: {division_name})")
+        if agent.get('filename') != entry.get('file'):
+            filename_mismatches.append(f"{aid} (registry: {agent.get('filename')}, divisions.json: {entry.get('file')})")
+    if division_mismatches:
+        msgs.append(f'Agent division in agent-registry.json does not match divisions.json: {division_mismatches}')
+    if filename_mismatches:
+        msgs.append(f'Agent filename in agent-registry.json does not match divisions.json: {filename_mismatches}')
+
+    missing_files = [a.get('filename') for a in registry_agents if not a.get('filename') or not (ROOT / a['filename']).is_file()]
+    if missing_files:
+        msgs.append(f'Agent files listed in agent-registry.json do not exist: {missing_files}')
+
+    if msgs:
+        raise ValueError('; '.join(msgs))
+
+
 def find_markdown_links(text):
     # Matches markdown relative links
     links = re.findall(r'\[([^\]]+)\]\(([^)]+)\)', text)
@@ -267,13 +326,14 @@ def main():
 
     # Validate agent structure mappings
     validate_divisions(divisions, actual_files)
+    agent_registry = load_json(ROOT / 'agent-registry.json')
+    validate_registry_consistency(agent_registry, divisions)
 
     # Validate individual agent prompt formats
     for file in actual_files:
         validate_agent_file(ROOT / file)
 
     # Compile list of valid registered entities
-    agent_registry = load_json(ROOT / 'agent-registry.json')
     agent_ids = {a['id'] for a in agent_registry.get('agents', [])}
     
     workflow_registry = load_json(ROOT / 'workflow-registry.json')
