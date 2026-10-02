@@ -169,14 +169,20 @@ export async function syncPortfolioToGithub({ owner, repo = 'career-portfolio', 
 
   const cleanRepo = String(repo).replace(/[^a-zA-Z0-9_.-]/g, '');
 
-  // Ensure repo exists or create it
-  try {
-    const checkUrl = buildValidatedApiUrl(`/repos/${targetOwner}/${cleanRepo}`);
-    const checkRes = await fetch(checkUrl, { headers: getGithubHeaders(token) });
-    if (checkRes.status === 404) {
-      await createRepository({ name: cleanRepo, description: 'Personal Career Portfolio & ATS Resume Hub', isPrivate: false, autoInit: true, token });
-    }
-  } catch {}
+  // Ensure repo exists or create it, and sync to its default branch
+  let branch;
+  const checkUrl = buildValidatedApiUrl(`/repos/${targetOwner}/${cleanRepo}`);
+  const checkRes = await fetch(checkUrl, { headers: getGithubHeaders(token) });
+  if (checkRes.status === 404) {
+    const created = await createRepository({ name: cleanRepo, description: 'Personal Career Portfolio & ATS Resume Hub', isPrivate: false, autoInit: true, token });
+    branch = created.defaultBranch;
+  } else if (checkRes.ok) {
+    const repoData = await checkRes.json();
+    branch = repoData.default_branch || 'main';
+  } else {
+    const errData = await checkRes.json().catch(() => ({}));
+    throw new Error(`Failed to look up repository ${targetOwner}/${cleanRepo} (${checkRes.status}): ${errData.message || checkRes.statusText}`);
+  }
 
   const pushedFiles = [];
 
@@ -187,6 +193,7 @@ export async function syncPortfolioToGithub({ owner, repo = 'career-portfolio', 
       filePath: 'RESUME.md',
       content: resumeMarkdown,
       commitMessage: 'docs(career-agents): sync ATS resume',
+      branch,
       token
     });
     pushedFiles.push(res);
@@ -199,6 +206,7 @@ export async function syncPortfolioToGithub({ owner, repo = 'career-portfolio', 
       filePath: 'COVER_LETTER.md',
       content: coverLetterMarkdown,
       commitMessage: 'docs(career-agents): sync executive cover letter',
+      branch,
       token
     });
     pushedFiles.push(res);
@@ -211,6 +219,7 @@ export async function syncPortfolioToGithub({ owner, repo = 'career-portfolio', 
       filePath: 'PORTFOLIO_PROJECTS.md',
       content: projectMarkdown,
       commitMessage: 'docs(career-agents): sync verified portfolio projects',
+      branch,
       token
     });
     pushedFiles.push(res);
