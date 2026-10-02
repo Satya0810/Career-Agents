@@ -1,12 +1,7 @@
 import fs from 'fs';
-import path from 'path';
-import { fileURLToPath } from 'url';
+import { resolveDataPath } from '../core/data-dir.js';
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-const root = path.resolve(__dirname, '../..');
-
-const PROFILE_FILE = path.join(root, '.career-profile.json');
+const PROFILE_FILE = resolveDataPath('.career-profile.json');
 
 const defaultProfile = {
   name: 'Candidate Profile',

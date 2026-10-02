@@ -1,11 +1,6 @@
 import fs from 'fs';
-import path from 'path';
-import { fileURLToPath } from 'url';
 import { getGithubHeaders } from './api-client.js';
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-const root = path.resolve(__dirname, '../..');
+import { resolveDataPath } from '../core/data-dir.js';
 
 export async function analyzeGithubProfile(username) {
   if (!username) {
@@ -179,7 +174,7 @@ export async function runGithubCLI(subcommandOrUser, ...extraArgs) {
     try {
       const { syncPortfolioToGithub } = await import('./api-client.js');
       console.log(`${c.cyan}Syncing career portfolio to GitHub repository '${repo}'...${c.reset}`);
-      const trackerPath = path.join(root, 'pipeline-tracker.md');
+      const trackerPath = resolveDataPath('pipeline-tracker.md');
       let resumeMd = '';
       if (fs.existsSync(trackerPath)) {
         resumeMd = fs.readFileSync(trackerPath, 'utf8');

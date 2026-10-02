@@ -1,18 +1,14 @@
 import fs from 'fs';
 import path from 'path';
-import { fileURLToPath } from 'url';
+import { resolveDataPath } from '../core/data-dir.js';
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-const root = path.resolve(__dirname, '../..');
-
-const TELEMETRY_LOG = path.join(root, 'exports', 'logs', 'telemetry.log');
+const TELEMETRY_LOG = resolveDataPath('exports', 'logs', 'telemetry.log');
 
 export function trackEvent(commandName, metadata = {}) {
   let profile = { telemetry_opt_in: false };
   
   try {
-    const profilePath = path.join(root, '.career-profile.json');
+    const profilePath = resolveDataPath('.career-profile.json');
     if (fs.existsSync(profilePath)) {
       profile = JSON.parse(fs.readFileSync(profilePath, 'utf8'));
     }

@@ -6,6 +6,7 @@
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import { resolveDataPath } from '../core/data-dir.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -28,7 +29,7 @@ export class PipelineDoctor {
     }
 
     // Check 2: Pipeline tracker
-    const trackerPath = path.join(root, 'pipeline-tracker.md');
+    const trackerPath = resolveDataPath('pipeline-tracker.md');
     results.checks.push({
       name: 'Application Tracker (pipeline-tracker.md)',
       passed: true,

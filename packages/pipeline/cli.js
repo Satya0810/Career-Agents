@@ -14,6 +14,7 @@ import { CoverLetterBuilder } from './cover-letter.js';
 import { InterviewCoach } from './interview-prep.js';
 import { OutreachGenerator } from './outreach.js';
 import { PipelineAnalytics } from './analytics.js';
+import { resolveDataPath } from '../core/data-dir.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -36,7 +37,7 @@ export async function runCareerPipelineCLI(subcommand, args = []) {
     return;
   }
 
-  const trackerPath = path.join(root, 'pipeline-tracker.md');
+  const trackerPath = resolveDataPath('pipeline-tracker.md');
 
   switch (subcommand) {
     case 'tracker':
@@ -68,7 +69,7 @@ export async function runCareerPipelineCLI(subcommand, args = []) {
         appliedDate: new Date().toISOString().split('T')[0]
       });
       tracker.save(trackerPath);
-      console.log(`\n${c.green}✓ Added application:${c.reset} ${entry.company} - ${entry.role} (${entry.status})\nSaved to pipeline-tracker.md\n`);
+      console.log(`\n${c.green}✓ Added application:${c.reset} ${entry.company} - ${entry.role} (${entry.status})\nSaved to ${trackerPath}\n`);
       break;
     }
 
