@@ -7,3 +7,4 @@ exports/
 generated-projects/
 .career-profile.json
 career-agents-*.tgz
+__pycache__/
