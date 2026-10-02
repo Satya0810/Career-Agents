@@ -97,10 +97,16 @@ function cosineSimilarity(vecA: number[], vecB: number[]): number {
 }
 
 export async function indexDocument(name: string, type: string, content: string): Promise<void> {
+  // Start from the stored chunks so anything saved since this module loaded is kept.
+  loadStore();
   const paragraphs = content.split(/\n\n+/).map(p => p.trim()).filter(Boolean);
+  // Paragraphs of this document that are already indexed; uploading it again must not duplicate them.
+  const indexed = new Set(documentStore.filter(c => c.documentName === name).map(c => c.content));
   
   for (let idx = 0; idx < paragraphs.length; idx++) {
     const p = paragraphs[idx].slice(0, 1000);
+    if (indexed.has(p)) continue;
+    indexed.add(p);
     const embedding = await generateEmbedding(p);
     
     documentStore.push({
