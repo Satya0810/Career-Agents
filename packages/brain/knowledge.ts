@@ -2,6 +2,7 @@
 import fs from "fs";
 import path from "path";
 import { resolveWorkspacePath } from "./router";
+import { scoreKeywordMatches } from "./keyword-score.js";
 
 export interface DocumentChunk {
   id: string;
@@ -123,17 +124,7 @@ export async function searchKnowledgeBase(query: string, limit: number = 3): Pro
   if (lq.length === 0 && !queryEmbedding) return [];
 
   const scored = documentStore.map(chunk => {
-    let bm25Score = 0;
-    const contentLower = chunk.content.toLowerCase();
-    
-    lq.forEach(word => {
-      if (contentLower.includes(word)) {
-        bm25Score += 1;
-        if (new RegExp(`\\b${word}\\b`).test(contentLower)) {
-          bm25Score += 2;
-        }
-      }
-    });
+    const bm25Score = scoreKeywordMatches(chunk.content.toLowerCase(), lq);
 
     let semanticScore = 0;
     if (queryEmbedding && chunk.embedding) {
